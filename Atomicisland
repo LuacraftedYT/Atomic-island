@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V104 | THE APEX",
+   Name = "LUACRAFTED V105 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Multi-Zone Routing Engine",
+   LoadingSubtitle = "Atomic Island High-HP Fix",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -136,7 +136,7 @@ FarmTab:CreateToggle({
                                local attackStartTime = os.clock()
                                local swingCount = 0
                                
-                               -- The Attack Loop with Heartbeat
+                               -- ⚔️ THE HIGH-HP ATTACK LOOP ⚔️
                                while autoFarmActive and currentTree:GetAttribute("Destroyed") ~= true do
                                    pcall(function() ChaosService:Clicked() end)
                                    swingCount = swingCount + 1
@@ -148,9 +148,17 @@ FarmTab:CreateToggle({
                                        root.Anchored = true
                                    end
                                    
-                                   -- Failsafes
-                                   if os.clock() - lastDamageTime > 3 then break end
-                                   if os.clock() - attackStartTime > 15 then break end
+                                   -- Failsafe 1: No damage for 6 seconds (Server lag)
+                                   if os.clock() - lastDamageTime > 6 then 
+                                       warn("⚠️ [LUACRAFTED] Skipped: Server didn't register damage for 6s!")
+                                       break 
+                                   end
+                                   
+                                   -- Failsafe 2: 120s Absolute Timeout (For high-HP Atomic Trees)
+                                   if os.clock() - attackStartTime > 120 then 
+                                       warn("⚠️ [LUACRAFTED] Skipped: Tree took longer than 2 minutes to break!")
+                                       break 
+                                   end
                                    
                                    task.wait(0.05) 
                                end
@@ -166,7 +174,7 @@ FarmTab:CreateToggle({
    end,
 })
 
-FarmTab:CreateLabel("Includes Server Physics Heartbeat & 15s Timeout.")
+FarmTab:CreateLabel("Includes 120s Timeout for High-HP Trees.")
 
 --- [[ MODULE 2: BOSS GOD-MODE ]] ---
 BossTab:CreateToggle({
@@ -249,7 +257,7 @@ eggDict["Alien Egg"] = findEggID({"alien", "crushcore"})
 eggDict["Chaotic Egg"] = findEggID({"chaotic", "chaos"}) 
 eggDict["Radioactive Egg"] = findEggID({"radioactive", "atomic"}) 
 
-local exactEggString = eggDict["Chaos Trees"] -- Placeholder to avoid nil
+local exactEggString = eggDict["Earth Egg"] -- Default
 
 if EggAnimController and EggController then
     EggAnimController.Hatch = function() end
