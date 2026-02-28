@@ -1,0 +1,304 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local Window = Rayfield:CreateWindow({
+   Name = "LUACRAFTED V104 | THE APEX",
+   LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
+   LoadingSubtitle = "Multi-Zone Routing Engine",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = false 
+})
+
+--- [[ TABS ]] ---
+local FarmTab = Window:CreateTab("🪓 Auto-Farm", 4483362458)
+local BossTab = Window:CreateTab("💪 Boss God-Mode", 4483362458)
+local EggTab = Window:CreateTab("🥚 Native Auto-Egg", 4483362458)
+
+--- [[ INIT KNIT & SERVICES ]] ---
+local Player = game.Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+task.wait(0.5)
+
+local Knit = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit"))
+
+-- Lumber & Boss Services/Controllers
+local ChaosService = Knit.GetService("ChaosBreakablesService")
+local ArmWrestleService = Knit.GetService("ArmWrestleService")
+local ArmWrestleController = Knit.GetController("ArmWrestleController")
+
+-- Egg Controllers
+local EggController = Knit.GetController("EggController")
+local EggAnimController = Knit.GetController("EggAnimationController")
+
+--- [[ MODULE 1: MULTI-ZONE ROUTING ENGINE ]] ---
+local autoFarmActive = false
+local lastDamageTime = os.clock()
+
+-- 📍 THE MASTER COORDINATE DATABASE 📍
+local treeDatabase = {
+    ["Chaos Trees"] = {
+        Vector3.new(-8780, 4, 8216),
+        Vector3.new(-8814, 3, 8252),
+        Vector3.new(-8785, 4, 8223),
+        Vector3.new(-8782, 3, 8250)
+    },
+    ["Infested Trees"] = {
+        Vector3.new(-7087, 3, 7899),
+        Vector3.new(-7054, 3, 7872),
+        Vector3.new(-7060, 3, 7840),
+        Vector3.new(-7110, 4, 7828)
+    },
+    ["Toxic Trees"] = {
+        Vector3.new(-7217, 3, 7953),
+        Vector3.new(-7222, 3, 7986),
+        Vector3.new(-7186, 3, 7981),
+        Vector3.new(-7166, 3, 7962)
+    }
+}
+
+-- Set the default route
+local activeTreeLocations = treeDatabase["Chaos Trees"]
+
+task.spawn(function()
+    if ChaosService.DamageBreakableSignal then
+        ChaosService.DamageBreakableSignal:Connect(function()
+            lastDamageTime = os.clock() 
+        end)
+    end
+end)
+
+local platform = workspace:FindFirstChild("LuacraftedPlatform")
+if not platform then
+    platform = Instance.new("Part")
+    platform.Name = "LuacraftedPlatform"
+    platform.Size = Vector3.new(5, 1, 5)
+    platform.Anchored = true
+    platform.Transparency = 1
+    platform.CanCollide = true
+    platform.Parent = workspace
+end
+
+FarmTab:CreateDropdown({
+    Name = "Select Farming Route",
+    Options = {"Chaos Trees", "Infested Trees", "Toxic Trees"},
+    CurrentOption = {"Chaos Trees"},
+    Callback = function(Option)
+        activeTreeLocations = treeDatabase[Option[1]]
+        print("📍 [LUACRAFTED] Switched route to: " .. Option[1])
+    end
+})
+
+FarmTab:CreateToggle({
+   Name = "Start Hardcoded Coordinate Farm",
+   CurrentValue = false,
+   Callback = function(Value)
+       autoFarmActive = Value
+       local root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+       
+       if not Value then 
+           if root then root.Anchored = false end
+           platform.Position = Vector3.new(0, -10000, 0) 
+       end
+       
+       if autoFarmActive then
+           task.spawn(function()
+               while autoFarmActive do
+                   -- Dynamically pulls from whichever list you selected in the UI
+                   for _, targetCoord in ipairs(activeTreeLocations) do
+                       if not autoFarmActive then break end
+                       
+                       local currentTree = nil
+                       for _, tree in ipairs(workspace.GameObjects.ChaosBreakables:GetDescendants()) do
+                           if tree:IsA("Model") and tree:GetAttribute("Destroyed") ~= true then
+                               if (tree:GetPivot().Position - targetCoord).Magnitude < 15 then
+                                   currentTree = tree
+                                   break
+                               end
+                           end
+                       end
+                       
+                       if currentTree then
+                           root = Player.Character:FindFirstChild("HumanoidRootPart")
+                           if root then
+                               local safePos = targetCoord + Vector3.new(2, 3.5, 2)
+                               platform.Position = safePos - Vector3.new(0, 3, 0)
+                               root.CFrame = CFrame.lookAt(safePos, targetCoord)
+                               
+                               -- Initial Physics Ping
+                               root.Anchored = true
+                               task.wait(0.05)
+                               root.Anchored = false
+                               task.wait(0.05)
+                               root.Anchored = true
+                               
+                               lastDamageTime = os.clock() 
+                               local attackStartTime = os.clock()
+                               local swingCount = 0
+                               
+                               -- The Attack Loop with Heartbeat
+                               while autoFarmActive and currentTree:GetAttribute("Destroyed") ~= true do
+                                   pcall(function() ChaosService:Clicked() end)
+                                   swingCount = swingCount + 1
+                                   
+                                   -- Pulse physics every 15 swings
+                                   if swingCount % 15 == 0 then
+                                       root.Anchored = false
+                                       task.wait(0.05)
+                                       root.Anchored = true
+                                   end
+                                   
+                                   -- Failsafes
+                                   if os.clock() - lastDamageTime > 3 then break end
+                                   if os.clock() - attackStartTime > 15 then break end
+                                   
+                                   task.wait(0.05) 
+                               end
+                               
+                               if root then root.Anchored = false end
+                           end
+                       end
+                   end
+                   task.wait(0.5)
+               end
+           end)
+       end
+   end,
+})
+
+FarmTab:CreateLabel("Includes Server Physics Heartbeat & 15s Timeout.")
+
+--- [[ MODULE 2: BOSS GOD-MODE ]] ---
+BossTab:CreateToggle({
+   Name = "Uncapped Auto-Clicker",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.AutoClick = Value
+       if Value then
+           task.spawn(function()
+               while _G.AutoClick do
+                   if ArmWrestleController.IsStarted then
+                       pcall(function() ArmWrestleController.MouseClick(Enum.UserInputType.MouseButton1, false) end)
+                   end
+                   task.wait(0.01) 
+               end
+           end)
+       end
+   end,
+})
+
+BossTab:CreateToggle({
+   Name = "Infinite Crit-Spammer",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.CritSpam = Value
+       if Value then
+           task.spawn(function()
+               while _G.CritSpam do
+                   if ArmWrestleController.Fighting then
+                       pcall(function() ArmWrestleService:RequestCritHit() end)
+                   end
+                   task.wait(0.1)
+               end
+           end)
+       end
+   end,
+})
+
+--- [[ MODULE 3: NATIVE AUTO-EGG (DYNAMIC SNIPER) ]] ---
+local eggDict = {
+    ["Earth Egg"] = "Unknown",
+    ["Alien Egg"] = "Unknown",
+    ["Chaotic Egg"] = "Unknown",
+    ["Radioactive Egg"] = "Unknown" 
+}
+
+local function findEggID(searchWords)
+    local foundID = "Unknown"
+    pcall(function()
+        for _, zone in ipairs(workspace.Zones:GetChildren()) do
+            local interactables = zone:FindFirstChild("Interactables")
+            if interactables then
+                local eggsFolder = interactables:FindFirstChild("Eggs")
+                if eggsFolder then
+                    for _, obj in ipairs(eggsFolder:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") then
+                            local attr = obj:GetAttribute("Egg")
+                            if attr then
+                                local parentName = string.lower(obj.Parent.Name)
+                                local attrLower = string.lower(attr)
+                                
+                                for _, word in ipairs(searchWords) do
+                                    if string.find(parentName, word) or string.find(attrLower, word) then
+                                        foundID = attr
+                                        return foundID
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+    return foundID
+end
+
+eggDict["Earth Egg"] = findEggID({"earth"})
+eggDict["Alien Egg"] = findEggID({"alien", "crushcore"}) 
+eggDict["Chaotic Egg"] = findEggID({"chaotic", "chaos"}) 
+eggDict["Radioactive Egg"] = findEggID({"radioactive", "atomic"}) 
+
+local exactEggString = eggDict["Chaos Trees"] -- Placeholder to avoid nil
+
+if EggAnimController and EggController then
+    EggAnimController.Hatch = function() end
+    EggController.opening = function(self)
+        self.EggIsOpening = false
+        self.CanOpen = true
+    end
+end
+
+EggTab:CreateDropdown({
+    Name = "Select Target",
+    Options = {"Earth Egg", "Alien Egg", "Chaotic Egg", "Radioactive Egg"},
+    CurrentOption = {"Earth Egg"},
+    Callback = function(Option)
+        exactEggString = eggDict[Option[1]]
+        if exactEggString == "Unknown" then
+            warn("⚠️ [LUACRAFTED] ID missing! Walk near the egg to load it.")
+        else
+            print("🎯 [LUACRAFTED] Locked onto: " .. exactEggString)
+        end
+    end
+})
+
+EggTab:CreateToggle({
+   Name = "Native Auto-Hatch (Silent)",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.NativeHatch = Value
+       
+       task.spawn(function()
+           while _G.NativeHatch do
+               if exactEggString == "Unknown" then
+                   task.wait(1)
+                   continue
+               end
+               
+               EggController.CurrentEgg = exactEggString
+               EggController.CanOpen = true
+               EggController.EggIsOpening = false
+               
+               local triple = Player:GetAttribute("TripleEggs") or false
+               local octo = Player:GetAttribute("OctoEggs") or false
+               
+               pcall(function()
+                   EggController:openEgg(triple, exactEggString, octo, true)
+               end)
+               
+               task.wait(0.05) 
+           end
+       end)
+   end,
+})
