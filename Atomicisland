@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V127 | THE APEX",
-   LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "All Island Arms Hardcoded",
+   Name = "LUACRAFTED V128 | THE APEX",
+   LoadingTitle = "RESTORING ALL SYSTEMS...",
+   LoadingSubtitle = "Safe-Load UI Protocol Active",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -17,8 +17,19 @@ local VirtualUser = game:GetService("VirtualUser")
 task.wait(0.5)
 
 local Knit = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit"))
-local PetService = Knit.GetService("PetService")
-local ArmsService = Knit.GetService("ArmsService")
+
+-- Safe Service Retrieval
+local function GetS(serviceName)
+    local s = nil
+    pcall(function() s = Knit.GetService(serviceName) end)
+    return s
+end
+
+local ChaosService = GetS("ChaosBreakablesService")
+local PetService = GetS("PetService")
+local ArmsService = GetS("ArmsService")
+local MerchantService = GetS("MerchantService")
+local GraveService = GetS("GraveDiggerService")
 
 --- [[ MODULE 0: NATIVE ANTI-AFK ]] ---
 Player.Idled:Connect(function()
@@ -30,153 +41,125 @@ end)
 local FarmTab = Window:CreateTab("🪓 Auto-Farm", 4483362458)
 local GoldenTab = Window:CreateTab("✨ Auto-Golden", 4483362458)
 local MerchantTab = Window:CreateTab("🛒 Auto-Merchant", 4483362458)
+local EggTab = Window:CreateTab("🥚 Auto-Egg", 4483362458)
+local GraveTab = Window:CreateTab("🪦 Auto-Grave", 4483362458)
 
---- [[ MODULE 6: PRECISION GOLDEN ALCHEMIST ]] ---
-local selectedPetToGold = "None"
-local selectedArmToGold = "None"
-
--- 🦾 THE HARDCODED ARM LIST
-local masterArmList = {
-    "None",
-    "MoltenIsland",
-    "TornadoIsland",
-    "BuffCoral",
-    "SandstoneMuscle",
-    "Floral",
-    "MeltdownToad_Baby_Normal" -- Added here as well just in case
+--- [[ MODULE 1: AUTO-FARM ]] ---
+local treeDatabase = {
+    ["Palm Trees"] = {Vector3.new(-8595, 3, 8089), Vector3.new(-8610, 3, 8038), Vector3.new(-8620, 3, 8068), Vector3.new(-8643, 3, 8036), Vector3.new(-8661, 3, 8016)},
+    ["Chaos Trees"] = {Vector3.new(-8780, 4, 8216), Vector3.new(-8814, 3, 8252)},
+    ["Infested Trees"] = {Vector3.new(-7100, 3, 7892), Vector3.new(-7055, 3, 7870), Vector3.new(-7076, 4, 7831), Vector3.new(-7098, 3, 7843)}
 }
+local activeTreeLocations = treeDatabase["Palm Trees"]
 
-local PetDropdown = GoldenTab:CreateDropdown({
-    Name = "Target Pet",
-    Options = {"None", "MeltdownToad_Baby_Normal"},
-    CurrentOption = {"None"},
-    Callback = function(Option) selectedPetToGold = Option[1] end
+FarmTab:CreateDropdown({
+    Name = "Select Farming Route",
+    Options = {"Palm Trees", "Chaos Trees", "Infested Trees"},
+    CurrentOption = {"Palm Trees"},
+    Callback = function(Option) activeTreeLocations = treeDatabase[Option[1]] end
 })
 
-GoldenTab:CreateButton({
-   Name = "🔄 Refresh Pet Inventory",
-   Callback = function()
-       pcall(function()
-           local ownedPets = PetService.RF.getOwned:InvokeServer()
-           if type(ownedPets) == "table" then
-               local uniqueNames = {"None", "MeltdownToad_Baby_Normal"}
-               local nameSet = {}
-               for _, petData in pairs(ownedPets) do
-                   local petName = tostring(petData.Key or petData.Id or "Unknown")
-                   if petName ~= "Unknown" and not nameSet[petName] then
-                       nameSet[petName] = true table.insert(uniqueNames, petName)
-                   end
-               end
-               PetDropdown:Refresh(uniqueNames, true)
-           end
-       end)
-   end,
-})
-
-GoldenTab:CreateToggle({
-   Name = "Auto-Craft Selected Pet",
+FarmTab:CreateToggle({
+   Name = "Start Coordinate Farm",
    CurrentValue = false,
    Callback = function(Value)
-       _G.AutoGoldenSelectedPet = Value
-       task.spawn(function()
-           while _G.AutoGoldenSelectedPet do
-               if selectedPetToGold ~= "None" then
-                   pcall(function()
-                       local ownedPets = PetService.RF.getOwned:InvokeServer()
-                       local uuids = {}
-                       for uuid, petData in pairs(ownedPets) do
-                           local pName = tostring(petData.Key or petData.Id)
-                           if tostring(petData.Tier) == "Normal" and pName == selectedPetToGold then
-                               table.insert(uuids, uuid)
-                           end
-                       end
-                       while #uuids >= 5 do
-                           local batch = {uuids[1], uuids[2], uuids[3], uuids[4], uuids[5]}
-                           for i = 1, 5 do table.remove(uuids, 1) end
-                           PetService.RF.goldify:InvokeServer(batch)
-                           task.wait(0.3) 
-                       end
-                   end)
+       _G.FarmActive = Value
+       if Value and ChaosService then
+           task.spawn(function()
+               while _G.FarmActive do
+                   for _, coord in ipairs(activeTreeLocations) do
+                       if not _G.FarmActive then break end
+                       pcall(function() ChaosService:Clicked() end)
+                       task.wait(0.05)
+                   end
                end
-               task.wait(3) 
-           end
-       end)
+           end)
+       end
    end,
 })
 
-GoldenTab:CreateLabel("-----------------------------------")
+--- [[ MODULE 2: AUTO-GOLDEN ]] ---
+local selectedArm = "None"
+local masterArmList = {"None", "MoltenIsland", "TornadoIsland", "BuffCoral", "SandstoneMuscle", "Floral", "MeltdownToad_Baby_Normal"}
 
 local ArmDropdown = GoldenTab:CreateDropdown({
     Name = "Target Arm",
     Options = masterArmList,
     CurrentOption = {"None"},
-    Callback = function(Option) selectedArmToGold = Option[1] end
-})
-
-GoldenTab:CreateButton({
-   Name = "💉 Force-Inject Island Arms",
-   Callback = function()
-       ArmDropdown:Refresh(masterArmList, true)
-       Rayfield:Notify({
-           Title = "System Injected",
-           Content = "Molten, Tornado, BuffCoral, and Sandstone are now in the list.",
-           Duration = 3
-       })
-   end,
-})
-
-GoldenTab:CreateButton({
-   Name = "🔄 Refresh Arm Inventory (Scan)",
-   Callback = function()
-       pcall(function()
-           local ownedArms = ArmsService.RF.getOwned:InvokeServer(Player)
-           if type(ownedArms) == "table" then
-               local uniqueNames = {}
-               -- Add hardcoded ones first
-               for _, arm in ipairs(masterArmList) do table.insert(uniqueNames, arm) end
-               
-               local nameSet = {}
-               for _, armData in pairs(ownedArms) do
-                   local armName = tostring(armData.ArmKey or armData.Key or armData.Id or "Unknown")
-                   if armName ~= "Unknown" and not nameSet[armName] then
-                       nameSet[armName] = true table.insert(uniqueNames, armName)
-                   end
-               end
-               ArmDropdown:Refresh(uniqueNames, true)
-           end
-       end)
-   end,
+    Callback = function(Option) selectedArm = Option[1] end
 })
 
 GoldenTab:CreateToggle({
-   Name = "Auto-Craft Selected Arm",
+   Name = "Auto-Craft Golden Arm",
    CurrentValue = false,
    Callback = function(Value)
-       _G.AutoGoldenSelectedArm = Value
-       task.spawn(function()
-           while _G.AutoGoldenSelectedArm do
-               if selectedArmToGold ~= "None" then
+       _G.AutoGoldArm = Value
+       if Value and ArmsService then
+           task.spawn(function()
+               while _G.AutoGoldArm do
                    pcall(function()
-                       local ownedArms = ArmsService.RF.getOwned:InvokeServer(Player)
+                       local owned = ArmsService.RF.getOwned:InvokeServer(Player)
                        local uuids = {}
-                       for uuid, armData in pairs(ownedArms) do
-                           local aName = tostring(armData.ArmKey or armData.Key or armData.Id)
-                           if tostring(armData.Tier or "Normal") == "Normal" and aName == selectedArmToGold then
-                               table.insert(uuids, uuid)
+                       for id, data in pairs(owned) do
+                           if tostring(data.ArmKey or data.Key) == selectedArm and tostring(data.Tier) == "Normal" then
+                               table.insert(uuids, id)
                            end
                        end
-                       while #uuids >= 5 do
-                           local batch = {uuids[1], uuids[2], uuids[3], uuids[4], uuids[5]}
-                           for i = 1, 5 do table.remove(uuids, 1) end
-                           ArmsService.RF.goldify:InvokeServer(batch)
-                           task.wait(0.3) 
+                       if #uuids >= 5 then
+                           ArmsService.RF.goldify:InvokeServer({uuids[1], uuids[2], uuids[3], uuids[4], uuids[5]})
                        end
                    end)
+                   task.wait(2)
                end
-               task.wait(3)
-           end
-       end)
+           end)
+       end
    end,
 })
 
--- (Rest of Farm and Merchant modules remain unchanged)
+--- [[ MODULE 3: MERCHANT ]] ---
+local selectedSlot = 1
+MerchantTab:CreateDropdown({
+    Name = "Select Slot",
+    Options = {"1","2","3","4","5","6","7","8","9","10","11","12","13"},
+    CurrentOption = {"1"},
+    Callback = function(Option) selectedSlot = tonumber(Option[1]) end
+})
+
+MerchantTab:CreateToggle({
+   Name = "Auto-Buy Slot",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.BuyMerchant = Value
+       if Value and MerchantService then
+           task.spawn(function()
+               while _G.BuyMerchant do
+                   pcall(function() MerchantService.RF.BuyItem:InvokeServer("Atomic", selectedSlot) end)
+                   local cd = (selectedSlot <= 10) and 60 or 300
+                   task.wait(cd)
+               end
+           end)
+       end
+   end,
+})
+
+--- [[ MODULE 4: GRAVE ]] ---
+GraveTab:CreateToggle({
+   Name = "Auto-Dig Graves",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.DigGrave = Value
+       if Value and GraveService then
+           task.spawn(function()
+               while _G.DigGrave do
+                   local folder = workspace.GameObjects:FindFirstChild("GraveDigging")
+                   if folder then
+                       for _, grave in ipairs(folder:GetChildren()) do
+                           pcall(function() GraveService.RF.DigGrave:InvokeServer(grave) end)
+                       end
+                   end
+                   task.wait(2)
+               end
+           end)
+       end
+   end,
+})
