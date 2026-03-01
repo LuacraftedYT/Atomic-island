@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V105 | THE APEX",
+   Name = "LUACRAFTED V106 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Atomic Island High-HP Fix",
+   LoadingSubtitle = "Palm Tree Routing Added",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -37,6 +37,18 @@ local lastDamageTime = os.clock()
 
 -- 📍 THE MASTER COORDINATE DATABASE 📍
 local treeDatabase = {
+    ["Palm Trees"] = {
+        Vector3.new(-8595, 3, 8089), 
+        Vector3.new(-8610, 3, 8038), 
+        Vector3.new(-8620, 3, 8068), 
+        Vector3.new(-8643, 3, 8036), 
+        Vector3.new(-8661, 3, 8016), 
+        Vector3.new(-8695, 3, 8073), 
+        Vector3.new(-8677, 3, 8071), 
+        Vector3.new(-8686, 5, 8041), 
+        Vector3.new(-8719, 3, 8038), 
+        Vector3.new(-8732, 3, 8051)
+    },
     ["Chaos Trees"] = {
         Vector3.new(-8780, 4, 8216),
         Vector3.new(-8814, 3, 8252),
@@ -58,7 +70,7 @@ local treeDatabase = {
 }
 
 -- Set the default route
-local activeTreeLocations = treeDatabase["Chaos Trees"]
+local activeTreeLocations = treeDatabase["Palm Trees"]
 
 task.spawn(function()
     if ChaosService.DamageBreakableSignal then
@@ -81,8 +93,8 @@ end
 
 FarmTab:CreateDropdown({
     Name = "Select Farming Route",
-    Options = {"Chaos Trees", "Infested Trees", "Toxic Trees"},
-    CurrentOption = {"Chaos Trees"},
+    Options = {"Palm Trees", "Chaos Trees", "Infested Trees", "Toxic Trees"},
+    CurrentOption = {"Palm Trees"},
     Callback = function(Option)
         activeTreeLocations = treeDatabase[Option[1]]
         print("📍 [LUACRAFTED] Switched route to: " .. Option[1])
