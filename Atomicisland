@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V112 | THE APEX",
+   Name = "LUACRAFTED V114 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Native Anti-AFK + V110 Core",
+   LoadingSubtitle = "New Infested Route + Upright Fix",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -25,26 +25,22 @@ task.wait(0.5)
 
 local Knit = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit"))
 
--- Lumber & Boss Services/Controllers
 local ChaosService = Knit.GetService("ChaosBreakablesService")
 local ArmWrestleService = Knit.GetService("ArmWrestleService")
 local ArmWrestleController = Knit.GetController("ArmWrestleController")
-
--- Egg Controllers
 local EggController = Knit.GetController("EggController")
 local EggAnimController = Knit.GetController("EggAnimationController")
 
---- [[ MODULE 0: NATIVE ANTI-AFK (SILENT) ]] ---
--- This runs invisibly in the background forever. It intercepts the 20-minute disconnect kick.
+--- [[ MODULE 0: NATIVE ANTI-AFK ]] ---
 Player.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
-    print("🛡️ [LUACRAFTED] Anti-AFK triggered. Disconnect prevented.")
 end)
 
 --- [[ MODULE 1: MULTI-ZONE ROUTING ENGINE (V110 CORE) ]] ---
 local autoFarmActive = false
 local lastDamageTime = os.clock()
+local currentTargetTreeID = nil 
 
 local treeDatabase = {
     ["Palm Trees"] = {
@@ -58,7 +54,9 @@ local treeDatabase = {
         Vector3.new(-8785, 4, 8223), Vector3.new(-8782, 3, 8250)
     },
     ["Infested Trees"] = {
-        Vector3.new(-7054, 3, 7872), Vector3.new(-7060, 3, 7840), Vector3.new(-7110, 4, 7828)
+        -- New Updated Coordinates!
+        Vector3.new(-7100, 3, 7892), Vector3.new(-7055, 3, 7870), 
+        Vector3.new(-7076, 4, 7831), Vector3.new(-7098, 3, 7843)
     },
     ["Toxic Trees"] = {
         Vector3.new(-7217, 3, 7953), Vector3.new(-7222, 3, 7986), 
@@ -70,8 +68,17 @@ local activeTreeLocations = treeDatabase["Palm Trees"]
 
 task.spawn(function()
     if ChaosService.DamageBreakableSignal then
-        ChaosService.DamageBreakableSignal:Connect(function()
-            lastDamageTime = os.clock() 
+        ChaosService.DamageBreakableSignal:Connect(function(damageData)
+            pcall(function()
+                if currentTargetTreeID and type(damageData) == "table" then
+                    for _, info in pairs(damageData) do
+                        if info.BreakableId == currentTargetTreeID then
+                            lastDamageTime = os.clock()
+                            break
+                        end
+                    end
+                end
+            end)
         end)
     end
 end)
@@ -106,6 +113,7 @@ FarmTab:CreateToggle({
        if not Value then 
            if root then root.Anchored = false end
            platform.Position = Vector3.new(0, -10000, 0) 
+           currentTargetTreeID = nil
        end
        
        if autoFarmActive then
@@ -127,9 +135,15 @@ FarmTab:CreateToggle({
                        if currentTree then
                            root = Player.Character:FindFirstChild("HumanoidRootPart")
                            if root then
+                               currentTargetTreeID = currentTree:GetAttribute("ID")
+                               
                                local safePos = targetCoord + Vector3.new(2, 3.5, 2)
                                platform.Position = safePos - Vector3.new(0, 3, 0)
-                               root.CFrame = CFrame.lookAt(safePos, targetCoord)
+                               
+                               -- ⚡ THE FIX: Upright Facing Math ⚡
+                               -- Flattens the target's Y axis to match your height so you don't tilt downward
+                               local uprightLookTarget = Vector3.new(targetCoord.X, safePos.Y, targetCoord.Z)
+                               root.CFrame = CFrame.lookAt(safePos, uprightLookTarget)
                                
                                root.Anchored = true
                                task.wait(0.05)
@@ -149,17 +163,21 @@ FarmTab:CreateToggle({
                                        root.Anchored = false
                                        task.wait(0.05)
                                        if root then
-                                           root.CFrame = CFrame.lookAt(safePos, targetCoord)
+                                           root.CFrame = CFrame.lookAt(safePos, uprightLookTarget)
                                            root.Anchored = true
                                        end
                                    end
                                    
-                                   if os.clock() - lastDamageTime > 6 then break end
+                                   if os.clock() - lastDamageTime > 6 then 
+                                       warn("⚠️ [LUACRAFTED] Skipped: Server ghosted YOUR hits for 6s!")
+                                       break 
+                                   end
                                    if os.clock() - attackStartTime > 120 then break end
                                    
                                    task.wait(0.05) 
                                end
                                
+                               currentTargetTreeID = nil
                                if root then root.Anchored = false end
                            end
                        end
@@ -343,7 +361,6 @@ MerchantTab:CreateButton({
                end)
                task.wait(0.1)
            end
-           print("🛒 [LUACRAFTED] Successfully sent buy requests for all 13 items!")
        end)
    end,
 })
