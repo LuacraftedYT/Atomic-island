@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V108 | THE APEX",
+   Name = "LUACRAFTED V109 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Infested Route Optimized",
+   LoadingSubtitle = "Anti-Slip Anchor Fix Applied",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -56,7 +56,6 @@ local treeDatabase = {
         Vector3.new(-8782, 3, 8250)
     },
     ["Infested Trees"] = {
-        -- Removed the buggy tree here!
         Vector3.new(-7054, 3, 7872),
         Vector3.new(-7060, 3, 7840),
         Vector3.new(-7110, 4, 7828)
@@ -144,16 +143,22 @@ FarmTab:CreateToggle({
                                local attackStartTime = os.clock()
                                local swingCount = 0
                                
-                               while autoFarmActive and currentTree:GetAttribute("Destroyed") ~= true do
+                               -- ⚡ ANTI-SLIP ATTACK LOOP ⚡
+                               while autoFarmActive and currentTree and currentTree.Parent and currentTree:GetAttribute("Destroyed") ~= true do
                                    pcall(function() ChaosService:Clicked() end)
                                    swingCount = swingCount + 1
                                    
+                                   -- Pulse physics but INSTANTLY lock coordinates so you don't fall
                                    if swingCount % 15 == 0 then
                                        root.Anchored = false
                                        task.wait(0.05)
-                                       root.Anchored = true
+                                       if root then
+                                           root.CFrame = CFrame.lookAt(safePos, targetCoord) -- The Anti-Slip Lock!
+                                           root.Anchored = true
+                                       end
                                    end
                                    
+                                   -- Failsafes
                                    if os.clock() - lastDamageTime > 6 then break end
                                    if os.clock() - attackStartTime > 120 then break end
                                    
@@ -164,7 +169,7 @@ FarmTab:CreateToggle({
                            end
                        end
                    end
-                   task.wait(0.5)
+                   task.wait(0.5) -- Briefly wait before repeating the route
                end
            end)
        end
