@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V128 | THE APEX",
-   LoadingTitle = "RESTORING ALL SYSTEMS...",
-   LoadingSubtitle = "Safe-Load UI Protocol Active",
+   Name = "LUACRAFTED V129 | THE APEX",
+   LoadingTitle = "CLEAN BOOT SEQUENCE...",
+   LoadingSubtitle = "High-Performance Farming Mode",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -18,7 +18,6 @@ task.wait(0.5)
 
 local Knit = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit"))
 
--- Safe Service Retrieval
 local function GetS(serviceName)
     local s = nil
     pcall(function() s = Knit.GetService(serviceName) end)
@@ -26,10 +25,9 @@ local function GetS(serviceName)
 end
 
 local ChaosService = GetS("ChaosBreakablesService")
-local PetService = GetS("PetService")
-local ArmsService = GetS("ArmsService")
 local MerchantService = GetS("MerchantService")
 local GraveService = GetS("GraveDiggerService")
+local EggController = Knit.GetController("EggController")
 
 --- [[ MODULE 0: NATIVE ANTI-AFK ]] ---
 Player.Idled:Connect(function()
@@ -39,38 +37,43 @@ end)
 
 --- [[ TABS ]] ---
 local FarmTab = Window:CreateTab("🪓 Auto-Farm", 4483362458)
-local GoldenTab = Window:CreateTab("✨ Auto-Golden", 4483362458)
-local MerchantTab = Window:CreateTab("🛒 Auto-Merchant", 4483362458)
-local EggTab = Window:CreateTab("🥚 Auto-Egg", 4483362458)
-local GraveTab = Window:CreateTab("🪦 Auto-Grave", 4483362458)
+local MerchantTab = Window:CreateTab("🛒 Merchant", 4483362458)
+local UtilityTab = Window:CreateTab("⚙️ Utility", 4483362458)
 
---- [[ MODULE 1: AUTO-FARM ]] ---
+--- [[ 1. AUTO-FARM ]] ---
 local treeDatabase = {
     ["Palm Trees"] = {Vector3.new(-8595, 3, 8089), Vector3.new(-8610, 3, 8038), Vector3.new(-8620, 3, 8068), Vector3.new(-8643, 3, 8036), Vector3.new(-8661, 3, 8016)},
     ["Chaos Trees"] = {Vector3.new(-8780, 4, 8216), Vector3.new(-8814, 3, 8252)},
     ["Infested Trees"] = {Vector3.new(-7100, 3, 7892), Vector3.new(-7055, 3, 7870), Vector3.new(-7076, 4, 7831), Vector3.new(-7098, 3, 7843)}
 }
-local activeTreeLocations = treeDatabase["Palm Trees"]
+local activeRoute = treeDatabase["Palm Trees"]
 
 FarmTab:CreateDropdown({
-    Name = "Select Farming Route",
+    Name = "Select Route",
     Options = {"Palm Trees", "Chaos Trees", "Infested Trees"},
     CurrentOption = {"Palm Trees"},
-    Callback = function(Option) activeTreeLocations = treeDatabase[Option[1]] end
+    Callback = function(Option) activeRoute = treeDatabase[Option[1]] end
 })
 
 FarmTab:CreateToggle({
-   Name = "Start Coordinate Farm",
+   Name = "Start Hardcoded Farm (V110 Physics)",
    CurrentValue = false,
    Callback = function(Value)
        _G.FarmActive = Value
        if Value and ChaosService then
            task.spawn(function()
                while _G.FarmActive do
-                   for _, coord in ipairs(activeTreeLocations) do
+                   for _, coord in ipairs(activeRoute) do
                        if not _G.FarmActive then break end
-                       pcall(function() ChaosService:Clicked() end)
-                       task.wait(0.05)
+                       local root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+                       if root then
+                           root.CFrame = CFrame.new(coord + Vector3.new(0, 3.5, 0))
+                           root.Anchored = true
+                           task.wait(0.1)
+                           pcall(function() ChaosService:Clicked() end)
+                           task.wait(0.5) -- Stability wait
+                           root.Anchored = false
+                       end
                    end
                end
            end)
@@ -78,45 +81,7 @@ FarmTab:CreateToggle({
    end,
 })
 
---- [[ MODULE 2: AUTO-GOLDEN ]] ---
-local selectedArm = "None"
-local masterArmList = {"None", "MoltenIsland", "TornadoIsland", "BuffCoral", "SandstoneMuscle", "Floral", "MeltdownToad_Baby_Normal"}
-
-local ArmDropdown = GoldenTab:CreateDropdown({
-    Name = "Target Arm",
-    Options = masterArmList,
-    CurrentOption = {"None"},
-    Callback = function(Option) selectedArm = Option[1] end
-})
-
-GoldenTab:CreateToggle({
-   Name = "Auto-Craft Golden Arm",
-   CurrentValue = false,
-   Callback = function(Value)
-       _G.AutoGoldArm = Value
-       if Value and ArmsService then
-           task.spawn(function()
-               while _G.AutoGoldArm do
-                   pcall(function()
-                       local owned = ArmsService.RF.getOwned:InvokeServer(Player)
-                       local uuids = {}
-                       for id, data in pairs(owned) do
-                           if tostring(data.ArmKey or data.Key) == selectedArm and tostring(data.Tier) == "Normal" then
-                               table.insert(uuids, id)
-                           end
-                       end
-                       if #uuids >= 5 then
-                           ArmsService.RF.goldify:InvokeServer({uuids[1], uuids[2], uuids[3], uuids[4], uuids[5]})
-                       end
-                   end)
-                   task.wait(2)
-               end
-           end)
-       end
-   end,
-})
-
---- [[ MODULE 3: MERCHANT ]] ---
+--- [[ 2. MERCHANT ]] ---
 local selectedSlot = 1
 MerchantTab:CreateDropdown({
     Name = "Select Slot",
@@ -126,7 +91,7 @@ MerchantTab:CreateDropdown({
 })
 
 MerchantTab:CreateToggle({
-   Name = "Auto-Buy Slot",
+   Name = "Auto-Buy Sniper",
    CurrentValue = false,
    Callback = function(Value)
        _G.BuyMerchant = Value
@@ -142,8 +107,8 @@ MerchantTab:CreateToggle({
    end,
 })
 
---- [[ MODULE 4: GRAVE ]] ---
-GraveTab:CreateToggle({
+--- [[ 3. UTILITY (GRAVE + EGG) ]] ---
+UtilityTab:CreateToggle({
    Name = "Auto-Dig Graves",
    CurrentValue = false,
    Callback = function(Value)
@@ -158,6 +123,22 @@ GraveTab:CreateToggle({
                        end
                    end
                    task.wait(2)
+               end
+           end)
+       end
+   end,
+})
+
+UtilityTab:CreateToggle({
+   Name = "Auto-Egg (Earth)",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.AutoEgg = Value
+       if Value and EggController then
+           task.spawn(function()
+               while _G.AutoEgg do
+                   pcall(function() EggController:openEgg(false, "Earth Egg", false, true) end)
+                   task.wait(0.1)
                end
            end)
        end
