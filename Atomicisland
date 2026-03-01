@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V106 | THE APEX",
+   Name = "LUACRAFTED V107 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Palm Tree Routing Added",
+   LoadingSubtitle = "Atomic Merchant Sniper Added",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -14,6 +14,7 @@ local Window = Rayfield:CreateWindow({
 local FarmTab = Window:CreateTab("🪓 Auto-Farm", 4483362458)
 local BossTab = Window:CreateTab("💪 Boss God-Mode", 4483362458)
 local EggTab = Window:CreateTab("🥚 Native Auto-Egg", 4483362458)
+local MerchantTab = Window:CreateTab("🛒 Auto-Merchant", 4483362458)
 
 --- [[ INIT KNIT & SERVICES ]] ---
 local Player = game.Players.LocalPlayer
@@ -35,7 +36,6 @@ local EggAnimController = Knit.GetController("EggAnimationController")
 local autoFarmActive = false
 local lastDamageTime = os.clock()
 
--- 📍 THE MASTER COORDINATE DATABASE 📍
 local treeDatabase = {
     ["Palm Trees"] = {
         Vector3.new(-8595, 3, 8089), 
@@ -69,7 +69,6 @@ local treeDatabase = {
     }
 }
 
--- Set the default route
 local activeTreeLocations = treeDatabase["Palm Trees"]
 
 task.spawn(function()
@@ -97,7 +96,6 @@ FarmTab:CreateDropdown({
     CurrentOption = {"Palm Trees"},
     Callback = function(Option)
         activeTreeLocations = treeDatabase[Option[1]]
-        print("📍 [LUACRAFTED] Switched route to: " .. Option[1])
     end
 })
 
@@ -116,7 +114,6 @@ FarmTab:CreateToggle({
        if autoFarmActive then
            task.spawn(function()
                while autoFarmActive do
-                   -- Dynamically pulls from whichever list you selected in the UI
                    for _, targetCoord in ipairs(activeTreeLocations) do
                        if not autoFarmActive then break end
                        
@@ -137,7 +134,6 @@ FarmTab:CreateToggle({
                                platform.Position = safePos - Vector3.new(0, 3, 0)
                                root.CFrame = CFrame.lookAt(safePos, targetCoord)
                                
-                               -- Initial Physics Ping
                                root.Anchored = true
                                task.wait(0.05)
                                root.Anchored = false
@@ -148,29 +144,18 @@ FarmTab:CreateToggle({
                                local attackStartTime = os.clock()
                                local swingCount = 0
                                
-                               -- ⚔️ THE HIGH-HP ATTACK LOOP ⚔️
                                while autoFarmActive and currentTree:GetAttribute("Destroyed") ~= true do
                                    pcall(function() ChaosService:Clicked() end)
                                    swingCount = swingCount + 1
                                    
-                                   -- Pulse physics every 15 swings
                                    if swingCount % 15 == 0 then
                                        root.Anchored = false
                                        task.wait(0.05)
                                        root.Anchored = true
                                    end
                                    
-                                   -- Failsafe 1: No damage for 6 seconds (Server lag)
-                                   if os.clock() - lastDamageTime > 6 then 
-                                       warn("⚠️ [LUACRAFTED] Skipped: Server didn't register damage for 6s!")
-                                       break 
-                                   end
-                                   
-                                   -- Failsafe 2: 120s Absolute Timeout (For high-HP Atomic Trees)
-                                   if os.clock() - attackStartTime > 120 then 
-                                       warn("⚠️ [LUACRAFTED] Skipped: Tree took longer than 2 minutes to break!")
-                                       break 
-                                   end
+                                   if os.clock() - lastDamageTime > 6 then break end
+                                   if os.clock() - attackStartTime > 120 then break end
                                    
                                    task.wait(0.05) 
                                end
@@ -185,8 +170,6 @@ FarmTab:CreateToggle({
        end
    end,
 })
-
-FarmTab:CreateLabel("Includes 120s Timeout for High-HP Trees.")
 
 --- [[ MODULE 2: BOSS GOD-MODE ]] ---
 BossTab:CreateToggle({
@@ -225,7 +208,7 @@ BossTab:CreateToggle({
    end,
 })
 
---- [[ MODULE 3: NATIVE AUTO-EGG (DYNAMIC SNIPER) ]] ---
+--- [[ MODULE 3: NATIVE AUTO-EGG ]] ---
 local eggDict = {
     ["Earth Egg"] = "Unknown",
     ["Alien Egg"] = "Unknown",
@@ -269,7 +252,7 @@ eggDict["Alien Egg"] = findEggID({"alien", "crushcore"})
 eggDict["Chaotic Egg"] = findEggID({"chaotic", "chaos"}) 
 eggDict["Radioactive Egg"] = findEggID({"radioactive", "atomic"}) 
 
-local exactEggString = eggDict["Earth Egg"] -- Default
+local exactEggString = eggDict["Earth Egg"]
 
 if EggAnimController and EggController then
     EggAnimController.Hatch = function() end
@@ -285,11 +268,6 @@ EggTab:CreateDropdown({
     CurrentOption = {"Earth Egg"},
     Callback = function(Option)
         exactEggString = eggDict[Option[1]]
-        if exactEggString == "Unknown" then
-            warn("⚠️ [LUACRAFTED] ID missing! Walk near the egg to load it.")
-        else
-            print("🎯 [LUACRAFTED] Locked onto: " .. exactEggString)
-        end
     end
 })
 
@@ -319,6 +297,53 @@ EggTab:CreateToggle({
                
                task.wait(0.05) 
            end
+       end)
+   end,
+})
+
+--- [[ MODULE 4: ATOMIC MERCHANT SNIPER ]] ---
+local selectedMerchantSlot = 1
+
+MerchantTab:CreateDropdown({
+    Name = "Select Item Slot (1-13)",
+    Options = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"},
+    CurrentOption = {"1"},
+    Callback = function(Option)
+        selectedMerchantSlot = tonumber(Option[1])
+    end
+})
+
+MerchantTab:CreateToggle({
+   Name = "Auto-Buy Selected Slot",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.AutoMerchantBuy = Value
+       if Value then
+           task.spawn(function()
+               while _G.AutoMerchantBuy do
+                   pcall(function()
+                       local args = { "Atomic", selectedMerchantSlot }
+                       ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
+                   end)
+                   task.wait(0.5) -- Fast enough to snipe, slow enough to not lag the server
+               end
+           end)
+       end
+   end,
+})
+
+MerchantTab:CreateButton({
+   Name = "Instant Buy ALL 13 Slots",
+   Callback = function()
+       task.spawn(function()
+           for i = 1, 13 do
+               pcall(function()
+                   local args = { "Atomic", i }
+                   ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
+               end)
+               task.wait(0.1)
+           end
+           print("🛒 [LUACRAFTED] Successfully sent buy requests for all 13 items!")
        end)
    end,
 })
