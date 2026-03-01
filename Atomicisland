@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V116 | THE APEX",
+   Name = "LUACRAFTED V123 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Precision Merchant Sniper",
+   LoadingSubtitle = "Molten & Tornado Arms Added",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -14,6 +14,7 @@ local Window = Rayfield:CreateWindow({
 local FarmTab = Window:CreateTab("🪓 Auto-Farm", 4483362458)
 local BossTab = Window:CreateTab("💪 Boss God-Mode", 4483362458)
 local EggTab = Window:CreateTab("🥚 Native Auto-Egg", 4483362458)
+local GoldenTab = Window:CreateTab("✨ Auto-Golden", 4483362458)
 local MerchantTab = Window:CreateTab("🛒 Auto-Merchant", 4483362458)
 local GraveTab = Window:CreateTab("🪦 Auto-Grave", 4483362458)
 
@@ -108,7 +109,6 @@ FarmTab:CreateToggle({
    Callback = function(Value)
        autoFarmActive = Value
        local root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-       
        if not Value then 
            if root then root.Anchored = false end
            platform.Position = Vector3.new(0, -10000, 0) 
@@ -120,7 +120,6 @@ FarmTab:CreateToggle({
                while autoFarmActive do
                    for _, targetCoord in ipairs(activeTreeLocations) do
                        if not autoFarmActive then break end
-                       
                        local currentTree = nil
                        for _, tree in ipairs(workspace.GameObjects.ChaosBreakables:GetDescendants()) do
                            if tree:IsA("Model") and tree:GetAttribute("Destroyed") ~= true then
@@ -130,32 +129,25 @@ FarmTab:CreateToggle({
                                end
                            end
                        end
-                       
                        if currentTree then
                            root = Player.Character:FindFirstChild("HumanoidRootPart")
                            if root then
                                currentTargetTreeID = currentTree:GetAttribute("ID")
-                               
                                local safePos = targetCoord + Vector3.new(2, 3.5, 2)
                                platform.Position = safePos - Vector3.new(0, 3, 0)
-                               
                                local uprightLookTarget = Vector3.new(targetCoord.X, safePos.Y, targetCoord.Z)
                                root.CFrame = CFrame.lookAt(safePos, uprightLookTarget)
-                               
                                root.Anchored = true
                                task.wait(0.05)
                                root.Anchored = false
                                task.wait(0.05)
                                root.Anchored = true
-                               
                                lastDamageTime = os.clock() 
                                local attackStartTime = os.clock()
                                local swingCount = 0
-                               
                                while autoFarmActive and currentTree and currentTree.Parent and currentTree:GetAttribute("Destroyed") ~= true do
                                    pcall(function() ChaosService:Clicked() end)
                                    swingCount = swingCount + 1
-                                   
                                    if swingCount % 15 == 0 then
                                        root.Anchored = false
                                        task.wait(0.05)
@@ -164,16 +156,10 @@ FarmTab:CreateToggle({
                                            root.Anchored = true
                                        end
                                    end
-                                   
-                                   if os.clock() - lastDamageTime > 6 then 
-                                       warn("⚠️ [LUACRAFTED] Skipped: Server ghosted YOUR hits for 6s!")
-                                       break 
-                                   end
+                                   if os.clock() - lastDamageTime > 6 then break end
                                    if os.clock() - attackStartTime > 120 then break end
-                                   
                                    task.wait(0.05) 
                                end
-                               
                                currentTargetTreeID = nil
                                if root then root.Anchored = false end
                            end
@@ -186,212 +172,142 @@ FarmTab:CreateToggle({
    end,
 })
 
---- [[ MODULE 2: BOSS GOD-MODE ]] ---
-BossTab:CreateToggle({
-   Name = "Uncapped Auto-Clicker",
-   CurrentValue = false,
-   Callback = function(Value)
-       _G.AutoClick = Value
-       if Value then
-           task.spawn(function()
-               while _G.AutoClick do
-                   if ArmWrestleController.IsStarted then
-                       pcall(function() ArmWrestleController.MouseClick(Enum.UserInputType.MouseButton1, false) end)
-                   end
-                   task.wait(0.01) 
-               end
-           end)
-       end
-   end,
+--- [[ MODULE 6: PRECISION GOLDEN ALCHEMIST (UPDATED FOR NEW ISLANDS) ]] ---
+local selectedPetToGold = "None"
+local selectedArmToGold = "None"
+
+-- Target List for New Islands
+local newIslandArms = {"MoltenIsland", "TornadoIsland", "BuffCoral", "SandstoneMuscle"}
+
+local PetDropdown = GoldenTab:CreateDropdown({
+    Name = "Target Pet",
+    Options = {"None"},
+    CurrentOption = {"None"},
+    Callback = function(Option) selectedPetToGold = Option[1] end
 })
 
-BossTab:CreateToggle({
-   Name = "Infinite Crit-Spammer",
-   CurrentValue = false,
-   Callback = function(Value)
-       _G.CritSpam = Value
-       if Value then
-           task.spawn(function()
-               while _G.CritSpam do
-                   if ArmWrestleController.Fighting then
-                       pcall(function() ArmWrestleService:RequestCritHit() end)
-                   end
-                   task.wait(0.1)
-               end
-           end)
-       end
-   end,
-})
-
---- [[ MODULE 3: NATIVE AUTO-EGG ]] ---
-local eggDict = {
-    ["Earth Egg"] = "Unknown",
-    ["Alien Egg"] = "Unknown",
-    ["Chaotic Egg"] = "Unknown",
-    ["Radioactive Egg"] = "Unknown" 
-}
-
-local function findEggID(searchWords)
-    local foundID = "Unknown"
-    pcall(function()
-        for _, zone in ipairs(workspace.Zones:GetChildren()) do
-            local interactables = zone:FindFirstChild("Interactables")
-            if interactables then
-                local eggsFolder = interactables:FindFirstChild("Eggs")
-                if eggsFolder then
-                    for _, obj in ipairs(eggsFolder:GetDescendants()) do
-                        if obj:IsA("ProximityPrompt") then
-                            local attr = obj:GetAttribute("Egg")
-                            if attr then
-                                local parentName = string.lower(obj.Parent.Name)
-                                local attrLower = string.lower(attr)
-                                
-                                for _, word in ipairs(searchWords) do
-                                    if string.find(parentName, word) or string.find(attrLower, word) then
-                                        foundID = attr
-                                        return foundID
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end)
-    return foundID
-end
-
-eggDict["Earth Egg"] = findEggID({"earth"})
-eggDict["Alien Egg"] = findEggID({"alien", "crushcore"}) 
-eggDict["Chaotic Egg"] = findEggID({"chaotic", "chaos"}) 
-eggDict["Radioactive Egg"] = findEggID({"radioactive", "atomic"}) 
-
-local exactEggString = eggDict["Earth Egg"]
-
-if EggAnimController and EggController then
-    EggAnimController.Hatch = function() end
-    EggController.opening = function(self)
-        self.EggIsOpening = false
-        self.CanOpen = true
-    end
-end
-
-EggTab:CreateDropdown({
-    Name = "Select Target",
-    Options = {"Earth Egg", "Alien Egg", "Chaotic Egg", "Radioactive Egg"},
-    CurrentOption = {"Earth Egg"},
-    Callback = function(Option)
-        exactEggString = eggDict[Option[1]]
-    end
-})
-
-EggTab:CreateToggle({
-   Name = "Native Auto-Hatch (Silent)",
-   CurrentValue = false,
-   Callback = function(Value)
-       _G.NativeHatch = Value
-       
-       task.spawn(function()
-           while _G.NativeHatch do
-               if exactEggString == "Unknown" then
-                   task.wait(1)
-                   continue
-               end
-               
-               EggController.CurrentEgg = exactEggString
-               EggController.CanOpen = true
-               EggController.EggIsOpening = false
-               
-               local triple = Player:GetAttribute("TripleEggs") or false
-               local octo = Player:GetAttribute("OctoEggs") or false
-               
-               pcall(function()
-                   EggController:openEgg(triple, exactEggString, octo, true)
-               end)
-               
-               task.wait(0.05) 
-           end
-       end)
-   end,
-})
-
---- [[ MODULE 4: PRECISION MERCHANT SNIPER ]] ---
-local selectedMerchantSlot = 1
-
-MerchantTab:CreateDropdown({
-    Name = "Select Item Slot (1-13)",
-    Options = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"},
-    CurrentOption = {"1"},
-    Callback = function(Option)
-        selectedMerchantSlot = tonumber(Option[1])
-    end
-})
-
-MerchantTab:CreateToggle({
-   Name = "Auto-Buy Selected Slot (Smart Cooldown)",
-   CurrentValue = false,
-   Callback = function(Value)
-       _G.AutoMerchantBuy = Value
-       if Value then
-           task.spawn(function()
-               while _G.AutoMerchantBuy do
-                   -- Fire the buy remote for the specific slot
-                   pcall(function()
-                       local args = { "Atomic", selectedMerchantSlot }
-                       ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
-                   end)
-                   
-                   -- Calculate the smart cooldown: Slots 1-10 get 60s, 11-13 get 300s
-                   local cooldown = (selectedMerchantSlot <= 10) and 60 or 300
-                   
-                   -- Micro-wait loop so it can be turned off instantly
-                   for w = 1, cooldown do
-                       if not _G.AutoMerchantBuy then break end
-                       task.wait(1)
-                   end
-               end
-           end)
-       end
-   end,
-})
-
-MerchantTab:CreateButton({
-   Name = "Instant Buy ALL 13 Slots",
+GoldenTab:CreateButton({
+   Name = "🔄 Refresh Pet Inventory",
    Callback = function()
-       task.spawn(function()
-           for i = 1, 13 do
-               pcall(function()
-                   local args = { "Atomic", i }
-                   ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
-               end)
-               task.wait(0.1)
+       pcall(function()
+           local petRF = ReplicatedStorage.Packages.Knit.Services.PetService.RF
+           local ownedPets = petRF.getOwned:InvokeServer()
+           if type(ownedPets) == "table" then
+               local uniqueNames = {"None"}
+               local nameSet = {}
+               for _, petData in pairs(ownedPets) do
+                   local petName = tostring(petData.Key or "Unknown")
+                   if petName ~= "Unknown" and not nameSet[petName] then
+                       nameSet[petName] = true
+                       table.insert(uniqueNames, petName)
+                   end
+               end
+               PetDropdown:Refresh(uniqueNames, true)
            end
-           print("🛒 [LUACRAFTED] Sent burst request for all 13 items!")
        end)
    end,
 })
 
---- [[ MODULE 5: AUTO-GRAVE DIGGER ]] ---
-GraveTab:CreateToggle({
-   Name = "Auto-Dig All Graves (Silent)",
+GoldenTab:CreateToggle({
+   Name = "Auto-Craft Selected Pet",
    CurrentValue = false,
    Callback = function(Value)
-       _G.AutoGrave = Value
+       _G.AutoGoldenSelectedPet = Value
        if Value then
            task.spawn(function()
-               while _G.AutoGrave do
-                   pcall(function()
-                       local gravesFolder = workspace.GameObjects:FindFirstChild("GraveDigging")
-                       if gravesFolder then
-                           for _, grave in ipairs(gravesFolder:GetChildren()) do
-                               if not _G.AutoGrave then break end
-                               ReplicatedStorage.Packages.Knit.Services.GraveDiggerService.RF.DigGrave:InvokeServer(grave)
-                               task.wait(0.05) 
+               while _G.AutoGoldenSelectedPet do
+                   if selectedPetToGold ~= "None" then
+                       pcall(function()
+                           local petRF = ReplicatedStorage.Packages.Knit.Services.PetService.RF
+                           local ownedPets = petRF.getOwned:InvokeServer()
+                           if type(ownedPets) == "table" then
+                               local uuids = {}
+                               for uuid, petData in pairs(ownedPets) do
+                                   if tostring(petData.Tier) == "Normal" and tostring(petData.Key) == selectedPetToGold then
+                                       table.insert(uuids, uuid)
+                                   end
+                               end
+                               while #uuids >= 5 do
+                                   if not _G.AutoGoldenSelectedPet then break end
+                                   local batch = {uuids[1], uuids[2], uuids[3], uuids[4], uuids[5]}
+                                   for i = 1, 5 do table.remove(uuids, 1) end
+                                   petRF.goldify:InvokeServer(batch)
+                                   task.wait(0.3) 
+                               end
                            end
-                       end
-                   end)
-                   task.wait(1) 
+                       end)
+                   end
+                   task.wait(3) 
+               end
+           end)
+       end
+   end,
+})
+
+GoldenTab:CreateLabel("-----------------------------------")
+
+local ArmDropdown = GoldenTab:CreateDropdown({
+    Name = "Target Arm",
+    Options = {"None"},
+    CurrentOption = {"None"},
+    Callback = function(Option) selectedArmToGold = Option[1] end
+})
+
+GoldenTab:CreateButton({
+   Name = "🔄 Refresh Arm Inventory",
+   Callback = function()
+       pcall(function()
+           local armRF = ReplicatedStorage.Packages.Knit.Services.ArmsService.RF
+           local ownedArms = armRF.getOwned:InvokeServer(Player)
+           if type(ownedArms) == "table" then
+               local uniqueNames = {"None"}
+               -- Ensure new island arms are always visible even if not owned yet
+               for _, arm in ipairs(newIslandArms) do table.insert(uniqueNames, arm) end
+               
+               local nameSet = {}
+               for _, armData in pairs(ownedArms) do
+                   local armName = tostring(armData.Key or armData.Name or "Unknown")
+                   if armName ~= "Unknown" and not nameSet[armName] then
+                       nameSet[armName] = true
+                       table.insert(uniqueNames, armName)
+                   end
+               end
+               ArmDropdown:Refresh(uniqueNames, true)
+           end
+       end)
+   end,
+})
+
+GoldenTab:CreateToggle({
+   Name = "Auto-Craft Selected Arm",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.AutoGoldenSelectedArm = Value
+       if Value then
+           task.spawn(function()
+               while _G.AutoGoldenSelectedArm do
+                   if selectedArmToGold ~= "None" then
+                       pcall(function()
+                           local armRF = ReplicatedStorage.Packages.Knit.Services.ArmsService.RF
+                           local ownedArms = armRF.getOwned:InvokeServer(Player)
+                           if type(ownedArms) == "table" then
+                               local uuids = {}
+                               for uuid, armData in pairs(ownedArms) do
+                                   if tostring(armData.Tier or "Normal") == "Normal" and tostring(armData.Key or armData.Name) == selectedArmToGold then
+                                       table.insert(uuids, uuid)
+                                   end
+                               end
+                               while #uuids >= 5 do
+                                   if not _G.AutoGoldenSelectedArm then break end
+                                   local batch = {uuids[1], uuids[2], uuids[3], uuids[4], uuids[5]}
+                                   for i = 1, 5 do table.remove(uuids, 1) end
+                                   armRF.goldify:InvokeServer(batch)
+                                   task.wait(0.3) 
+                               end
+                           end
+                       end)
+                   end
+                   task.wait(3)
                end
            end)
        end
