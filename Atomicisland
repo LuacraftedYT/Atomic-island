@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V114 | THE APEX",
+   Name = "LUACRAFTED V115 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "New Infested Route + Upright Fix",
+   LoadingSubtitle = "Smart Merchant Timers Active",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -54,7 +54,6 @@ local treeDatabase = {
         Vector3.new(-8785, 4, 8223), Vector3.new(-8782, 3, 8250)
     },
     ["Infested Trees"] = {
-        -- New Updated Coordinates!
         Vector3.new(-7100, 3, 7892), Vector3.new(-7055, 3, 7870), 
         Vector3.new(-7076, 4, 7831), Vector3.new(-7098, 3, 7843)
     },
@@ -140,8 +139,6 @@ FarmTab:CreateToggle({
                                local safePos = targetCoord + Vector3.new(2, 3.5, 2)
                                platform.Position = safePos - Vector3.new(0, 3, 0)
                                
-                               -- ⚡ THE FIX: Upright Facing Math ⚡
-                               -- Flattens the target's Y axis to match your height so you don't tilt downward
                                local uprightLookTarget = Vector3.new(targetCoord.X, safePos.Y, targetCoord.Z)
                                root.CFrame = CFrame.lookAt(safePos, uprightLookTarget)
                                
@@ -319,31 +316,51 @@ EggTab:CreateToggle({
    end,
 })
 
---- [[ MODULE 4: ATOMIC MERCHANT SNIPER ]] ---
-local selectedMerchantSlot = 1
-
-MerchantTab:CreateDropdown({
-    Name = "Select Item Slot (1-13)",
-    Options = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"},
-    CurrentOption = {"1"},
-    Callback = function(Option)
-        selectedMerchantSlot = tonumber(Option[1])
-    end
-})
-
+--- [[ MODULE 4: SMART ATOMIC MERCHANT SNIPER ]] ---
 MerchantTab:CreateToggle({
-   Name = "Auto-Buy Selected Slot",
+   Name = "Smart Auto-Buy (1-10 @ 1m | 11-13 @ 5m)",
    CurrentValue = false,
    Callback = function(Value)
-       _G.AutoMerchantBuy = Value
+       _G.SmartMerchant = Value
+       
        if Value then
+           -- BRAIN 1: Slots 1 through 10 (Every 60 Seconds)
            task.spawn(function()
-               while _G.AutoMerchantBuy do
-                   pcall(function()
-                       local args = { "Atomic", selectedMerchantSlot }
-                       ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
-                   end)
-                   task.wait(0.5) 
+               while _G.SmartMerchant do
+                   for i = 1, 10 do
+                       if not _G.SmartMerchant then break end
+                       pcall(function()
+                           local args = { "Atomic", i }
+                           ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
+                       end)
+                       task.wait(0.1) -- Prevents remote rate-limiting
+                   end
+                   
+                   -- Micro-wait loop so it can be turned off instantly
+                   for w = 1, 60 do
+                       if not _G.SmartMerchant then break end
+                       task.wait(1)
+                   end
+               end
+           end)
+           
+           -- BRAIN 2: Slots 11 through 13 (Every 5 Minutes)
+           task.spawn(function()
+               while _G.SmartMerchant do
+                   for i = 11, 13 do
+                       if not _G.SmartMerchant then break end
+                       pcall(function()
+                           local args = { "Atomic", i }
+                           ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
+                       end)
+                       task.wait(0.1)
+                   end
+                   
+                   -- 300 seconds = 5 minutes
+                   for w = 1, 300 do
+                       if not _G.SmartMerchant then break end
+                       task.wait(1)
+                   end
                end
            end)
        end
@@ -351,7 +368,7 @@ MerchantTab:CreateToggle({
 })
 
 MerchantTab:CreateButton({
-   Name = "Instant Buy ALL 13 Slots",
+   Name = "Force Buy ALL 13 Slots Right Now",
    Callback = function()
        task.spawn(function()
            for i = 1, 13 do
