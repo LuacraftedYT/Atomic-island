@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V115 | THE APEX",
+   Name = "LUACRAFTED V116 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Smart Merchant Timers Active",
+   LoadingSubtitle = "Precision Merchant Sniper",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -316,49 +316,38 @@ EggTab:CreateToggle({
    end,
 })
 
---- [[ MODULE 4: SMART ATOMIC MERCHANT SNIPER ]] ---
+--- [[ MODULE 4: PRECISION MERCHANT SNIPER ]] ---
+local selectedMerchantSlot = 1
+
+MerchantTab:CreateDropdown({
+    Name = "Select Item Slot (1-13)",
+    Options = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"},
+    CurrentOption = {"1"},
+    Callback = function(Option)
+        selectedMerchantSlot = tonumber(Option[1])
+    end
+})
+
 MerchantTab:CreateToggle({
-   Name = "Smart Auto-Buy (1-10 @ 1m | 11-13 @ 5m)",
+   Name = "Auto-Buy Selected Slot (Smart Cooldown)",
    CurrentValue = false,
    Callback = function(Value)
-       _G.SmartMerchant = Value
-       
+       _G.AutoMerchantBuy = Value
        if Value then
-           -- BRAIN 1: Slots 1 through 10 (Every 60 Seconds)
            task.spawn(function()
-               while _G.SmartMerchant do
-                   for i = 1, 10 do
-                       if not _G.SmartMerchant then break end
-                       pcall(function()
-                           local args = { "Atomic", i }
-                           ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
-                       end)
-                       task.wait(0.1) -- Prevents remote rate-limiting
-                   end
+               while _G.AutoMerchantBuy do
+                   -- Fire the buy remote for the specific slot
+                   pcall(function()
+                       local args = { "Atomic", selectedMerchantSlot }
+                       ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
+                   end)
+                   
+                   -- Calculate the smart cooldown: Slots 1-10 get 60s, 11-13 get 300s
+                   local cooldown = (selectedMerchantSlot <= 10) and 60 or 300
                    
                    -- Micro-wait loop so it can be turned off instantly
-                   for w = 1, 60 do
-                       if not _G.SmartMerchant then break end
-                       task.wait(1)
-                   end
-               end
-           end)
-           
-           -- BRAIN 2: Slots 11 through 13 (Every 5 Minutes)
-           task.spawn(function()
-               while _G.SmartMerchant do
-                   for i = 11, 13 do
-                       if not _G.SmartMerchant then break end
-                       pcall(function()
-                           local args = { "Atomic", i }
-                           ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
-                       end)
-                       task.wait(0.1)
-                   end
-                   
-                   -- 300 seconds = 5 minutes
-                   for w = 1, 300 do
-                       if not _G.SmartMerchant then break end
+                   for w = 1, cooldown do
+                       if not _G.AutoMerchantBuy then break end
                        task.wait(1)
                    end
                end
@@ -368,7 +357,7 @@ MerchantTab:CreateToggle({
 })
 
 MerchantTab:CreateButton({
-   Name = "Force Buy ALL 13 Slots Right Now",
+   Name = "Instant Buy ALL 13 Slots",
    Callback = function()
        task.spawn(function()
            for i = 1, 13 do
@@ -378,6 +367,7 @@ MerchantTab:CreateButton({
                end)
                task.wait(0.1)
            end
+           print("🛒 [LUACRAFTED] Sent burst request for all 13 items!")
        end)
    end,
 })
