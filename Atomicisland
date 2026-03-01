@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V109 | THE APEX",
+   Name = "LUACRAFTED V110 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Anti-Slip Anchor Fix Applied",
+   LoadingSubtitle = "Auto-Grave Digger Added",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -15,6 +15,7 @@ local FarmTab = Window:CreateTab("🪓 Auto-Farm", 4483362458)
 local BossTab = Window:CreateTab("💪 Boss God-Mode", 4483362458)
 local EggTab = Window:CreateTab("🥚 Native Auto-Egg", 4483362458)
 local MerchantTab = Window:CreateTab("🛒 Auto-Merchant", 4483362458)
+local GraveTab = Window:CreateTab("🪦 Auto-Grave", 4483362458)
 
 --- [[ INIT KNIT & SERVICES ]] ---
 local Player = game.Players.LocalPlayer
@@ -148,17 +149,15 @@ FarmTab:CreateToggle({
                                    pcall(function() ChaosService:Clicked() end)
                                    swingCount = swingCount + 1
                                    
-                                   -- Pulse physics but INSTANTLY lock coordinates so you don't fall
                                    if swingCount % 15 == 0 then
                                        root.Anchored = false
                                        task.wait(0.05)
                                        if root then
-                                           root.CFrame = CFrame.lookAt(safePos, targetCoord) -- The Anti-Slip Lock!
+                                           root.CFrame = CFrame.lookAt(safePos, targetCoord)
                                            root.Anchored = true
                                        end
                                    end
                                    
-                                   -- Failsafes
                                    if os.clock() - lastDamageTime > 6 then break end
                                    if os.clock() - attackStartTime > 120 then break end
                                    
@@ -169,7 +168,7 @@ FarmTab:CreateToggle({
                            end
                        end
                    end
-                   task.wait(0.5) -- Briefly wait before repeating the route
+                   task.wait(0.5) 
                end
            end)
        end
@@ -352,3 +351,34 @@ MerchantTab:CreateButton({
        end)
    end,
 })
+
+--- [[ MODULE 5: AUTO-GRAVE DIGGER ]] ---
+GraveTab:CreateToggle({
+   Name = "Auto-Dig All Graves (Silent)",
+   CurrentValue = false,
+   Callback = function(Value)
+       _G.AutoGrave = Value
+       if Value then
+           task.spawn(function()
+               while _G.AutoGrave do
+                   pcall(function()
+                       local gravesFolder = workspace.GameObjects:FindFirstChild("GraveDigging")
+                       if gravesFolder then
+                           -- Loop through every grave UUID object in the folder
+                           for _, grave in ipairs(gravesFolder:GetChildren()) do
+                               if not _G.AutoGrave then break end
+                               
+                               -- Beam the grave instance directly to the server
+                               ReplicatedStorage.Packages.Knit.Services.GraveDiggerService.RF.DigGrave:InvokeServer(grave)
+                               task.wait(0.05) -- Lightning fast, but prevents remote exhaustion
+                           end
+                       end
+                   end)
+                   task.wait(1) -- Wait 1 second before scanning the map for new graves
+               end
+           end)
+       end
+   end,
+})
+
+GraveTab:CreateLabel("Instantly claims all graves on the map from anywhere.")
