@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V107 | THE APEX",
+   Name = "LUACRAFTED V108 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Atomic Merchant Sniper Added",
+   LoadingSubtitle = "Infested Route Optimized",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -56,7 +56,7 @@ local treeDatabase = {
         Vector3.new(-8782, 3, 8250)
     },
     ["Infested Trees"] = {
-        Vector3.new(-7087, 3, 7899),
+        -- Removed the buggy tree here!
         Vector3.new(-7054, 3, 7872),
         Vector3.new(-7060, 3, 7840),
         Vector3.new(-7110, 4, 7828)
@@ -325,7 +325,7 @@ MerchantTab:CreateToggle({
                        local args = { "Atomic", selectedMerchantSlot }
                        ReplicatedStorage.Packages.Knit.Services.MerchantService.RF.BuyItem:InvokeServer(unpack(args))
                    end)
-                   task.wait(0.5) -- Fast enough to snipe, slow enough to not lag the server
+                   task.wait(0.5) 
                end
            end)
        end
