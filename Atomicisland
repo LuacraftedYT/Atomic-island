@@ -3,9 +3,9 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Window = Rayfield:CreateWindow({
-   Name = "LUACRAFTED V110 | THE APEX",
+   Name = "LUACRAFTED V112 | THE APEX",
    LoadingTitle = "SYNCHRONIZING ALL SYSTEMS...",
-   LoadingSubtitle = "Auto-Grave Digger Added",
+   LoadingSubtitle = "Native Anti-AFK + V110 Core",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
@@ -20,6 +20,7 @@ local GraveTab = Window:CreateTab("🪦 Auto-Grave", 4483362458)
 --- [[ INIT KNIT & SERVICES ]] ---
 local Player = game.Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
 task.wait(0.5)
 
 local Knit = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit"))
@@ -33,39 +34,35 @@ local ArmWrestleController = Knit.GetController("ArmWrestleController")
 local EggController = Knit.GetController("EggController")
 local EggAnimController = Knit.GetController("EggAnimationController")
 
---- [[ MODULE 1: MULTI-ZONE ROUTING ENGINE ]] ---
+--- [[ MODULE 0: NATIVE ANTI-AFK (SILENT) ]] ---
+-- This runs invisibly in the background forever. It intercepts the 20-minute disconnect kick.
+Player.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+    print("🛡️ [LUACRAFTED] Anti-AFK triggered. Disconnect prevented.")
+end)
+
+--- [[ MODULE 1: MULTI-ZONE ROUTING ENGINE (V110 CORE) ]] ---
 local autoFarmActive = false
 local lastDamageTime = os.clock()
 
 local treeDatabase = {
     ["Palm Trees"] = {
-        Vector3.new(-8595, 3, 8089), 
-        Vector3.new(-8610, 3, 8038), 
-        Vector3.new(-8620, 3, 8068), 
-        Vector3.new(-8643, 3, 8036), 
-        Vector3.new(-8661, 3, 8016), 
-        Vector3.new(-8695, 3, 8073), 
-        Vector3.new(-8677, 3, 8071), 
-        Vector3.new(-8686, 5, 8041), 
-        Vector3.new(-8719, 3, 8038), 
+        Vector3.new(-8595, 3, 8089), Vector3.new(-8610, 3, 8038), Vector3.new(-8620, 3, 8068), 
+        Vector3.new(-8643, 3, 8036), Vector3.new(-8661, 3, 8016), Vector3.new(-8695, 3, 8073), 
+        Vector3.new(-8677, 3, 8071), Vector3.new(-8686, 5, 8041), Vector3.new(-8719, 3, 8038), 
         Vector3.new(-8732, 3, 8051)
     },
     ["Chaos Trees"] = {
-        Vector3.new(-8780, 4, 8216),
-        Vector3.new(-8814, 3, 8252),
-        Vector3.new(-8785, 4, 8223),
-        Vector3.new(-8782, 3, 8250)
+        Vector3.new(-8780, 4, 8216), Vector3.new(-8814, 3, 8252), 
+        Vector3.new(-8785, 4, 8223), Vector3.new(-8782, 3, 8250)
     },
     ["Infested Trees"] = {
-        Vector3.new(-7054, 3, 7872),
-        Vector3.new(-7060, 3, 7840),
-        Vector3.new(-7110, 4, 7828)
+        Vector3.new(-7054, 3, 7872), Vector3.new(-7060, 3, 7840), Vector3.new(-7110, 4, 7828)
     },
     ["Toxic Trees"] = {
-        Vector3.new(-7217, 3, 7953),
-        Vector3.new(-7222, 3, 7986),
-        Vector3.new(-7186, 3, 7981),
-        Vector3.new(-7166, 3, 7962)
+        Vector3.new(-7217, 3, 7953), Vector3.new(-7222, 3, 7986), 
+        Vector3.new(-7186, 3, 7981), Vector3.new(-7166, 3, 7962)
     }
 }
 
@@ -144,7 +141,6 @@ FarmTab:CreateToggle({
                                local attackStartTime = os.clock()
                                local swingCount = 0
                                
-                               -- ⚡ ANTI-SLIP ATTACK LOOP ⚡
                                while autoFarmActive and currentTree and currentTree.Parent and currentTree:GetAttribute("Destroyed") ~= true do
                                    pcall(function() ChaosService:Clicked() end)
                                    swingCount = swingCount + 1
@@ -364,21 +360,16 @@ GraveTab:CreateToggle({
                    pcall(function()
                        local gravesFolder = workspace.GameObjects:FindFirstChild("GraveDigging")
                        if gravesFolder then
-                           -- Loop through every grave UUID object in the folder
                            for _, grave in ipairs(gravesFolder:GetChildren()) do
                                if not _G.AutoGrave then break end
-                               
-                               -- Beam the grave instance directly to the server
                                ReplicatedStorage.Packages.Knit.Services.GraveDiggerService.RF.DigGrave:InvokeServer(grave)
-                               task.wait(0.05) -- Lightning fast, but prevents remote exhaustion
+                               task.wait(0.05) 
                            end
                        end
                    end)
-                   task.wait(1) -- Wait 1 second before scanning the map for new graves
+                   task.wait(1) 
                end
            end)
        end
    end,
 })
-
-GraveTab:CreateLabel("Instantly claims all graves on the map from anywhere.")
